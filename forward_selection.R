@@ -24,7 +24,7 @@ tidymodels::tidymodels_prefer()
 
 # Potassium Intake --------------------------------------------------------
 # Isaac wrote a paragraph about this, so I will include a simple predictor
-diet <- read_xpt("data/extra/errors/DR1IFF_I.XPT") %>% 
+diet <- read_xpt("data/DR1IFF_I.XPT") %>% 
   janitor::clean_names() %>% 
   select(c(
     seqn, dr1ipota, 
@@ -39,7 +39,7 @@ diet <- read_xpt("data/extra/errors/DR1IFF_I.XPT") %>%
     total_caffeine = sum(dr1icaff)
   ) 
 
-write_xpt(diet, "data/extra/diet.XPT")
+write_xpt(diet, "data/diet.XPT")
 
 diet %>% 
   glimpse()
@@ -54,7 +54,7 @@ all_cores <- parallel::detectCores(logical = TRUE)
 registerDoParallel(cores = all_cores - 1)
 
 
-downloaded_data <- dir("data/extra", ignore.case = TRUE, pattern = "XPT", full.names = TRUE)
+downloaded_data <- dir("data/", ignore.case = TRUE, pattern = "XPT", full.names = TRUE)
 
 
 # Initiating the process of including everything in one Tibble.
@@ -208,7 +208,7 @@ bp <- read_xpt("data/BPX_I.XPT") %>%
   select(c(seqn, bpxsy1, bpxdi1))
 
 
-medication <- read_xpt("data/extra/errors/RXQ_RX_I.XPT") %>% 
+medication <- read_xpt("data/RXQ_RX_I.XPT") %>% 
   janitor::clean_names() %>% 
   glimpse()
 
@@ -408,18 +408,18 @@ best_forward_selection <- overall_complete %>%
   select(c(best_predictors))
 
 best_forward_selection %>% 
-  write_rds("data/extra/best_forward.rds")
+  write_rds("data/best_forward.rds")
 
 best_forward_selection %>% 
   names() %>% 
   as_tibble() %>% 
   rename(optimal_var = value) %>% 
-  write_csv("data/extra/optimal_vars.csv")
+  write_csv("data/optimal_vars.csv")
 
 
 
 # Figuring Out Scaling ----------------------------------------------------
-problem_scale <- read_xpt("data/extra/errors/INQ_I.XPT") %>% 
+problem_scale <- read_xpt("data/INQ_I.XPT") %>% 
   janitor::clean_names()
 
 problem_scale %>% 
