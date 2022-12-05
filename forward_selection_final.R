@@ -23,7 +23,7 @@ library(foreach)
 library(doParallel)
 tidymodels::tidymodels_prefer()
 
-
+# setwd("data/extra/github_setup/")
 
 
 # Parallel Processing ----
@@ -45,13 +45,17 @@ complete <- read_xpt("data/extra_data/BPX_I.XPT") %>%
 for (i in seq(length(downloaded_data))){
   file <- read_xpt(downloaded_data[[i]]) %>% 
     janitor::clean_names()
-  complete <- merge(complete, file)
+  print(file %>% 
+    dim())
+  complete <- left_join(complete, file)
 }
 
 overall_complete <- complete
 
 important_variables <- c()
 
+overall_complete %>% 
+  glimpse()
 
 
 # OLS forward regression only works on multilinear regression.
@@ -73,7 +77,7 @@ forward_predictors <- function(i_file){
     janitor::clean_names() %>% 
     select(c(seqn, bpxsy1))
   
-  complete <<- merge(bp_data, file) %>% 
+  complete <<- left_join(bp_data, file) %>% 
     select(-seqn) 
   
   intact_cols <<- complete %>% 
@@ -222,6 +226,8 @@ medication_abridged <- medication_abridged %>%
   )
 
 
+
+
 # Global assignment is necessary for ols_step_forward_p()
 file <- medication_abridged
 
@@ -229,7 +235,7 @@ bp_data <- read_xpt("data/extra_data/BPX_I.XPT") %>%
   janitor::clean_names() %>% 
   select(c(seqn, bpxsy1))
 
-complete_meds <- merge(bp_data, file) %>% 
+complete_meds <- left_join(bp_data, file) %>% 
   select(-seqn) 
 
 intact_cols <- complete_meds %>% 
@@ -264,9 +270,14 @@ meds_help <- head(model$predictors, 3)
 
 # Looking at everything
 overall_complete_subset <- overall_complete %>% 
-  merge(medication_abridged) %>% 
-  merge(medication_counts) %>% 
+  left_join(medication_abridged) %>% 
+  left_join(medication_counts) %>% 
   select(c(seqn, important_variables, all_of(meds_help), count_meds))
+
+overall_complete_subset %>% 
+  left_join(bp_data) %>% 
+  filter(!is.na(bpxsy1)) %>% 
+  count(section_I)
 
 
 file <- overall_complete_subset
@@ -275,7 +286,7 @@ bp_data <- read_xpt("data/extra_data/BPX_I.XPT") %>%
   janitor::clean_names() %>% 
   select(c(seqn, bpxsy1))
 
-complete_meds <- merge(bp_data, file) %>% 
+complete_meds <- left_join(bp_data, file) %>% 
   select(-seqn) 
 
 intact_cols <- complete_meds %>% 
@@ -311,18 +322,28 @@ best_predictors <- ols_results$predictors %>%
 
 
 best_forward_selection <- overall_complete %>% 
-  merge(medication_abridged) %>% 
-  merge(medication_counts) %>% 
-  select(all_of(best_predictors))
+  left_join(medication_abridged) %>% 
+  left_join(medication_counts) %>% 
+  select(c(seqn, all_of(best_predictors)))
 
 best_forward_selection %>% 
-  write_rds("data/best_forward_revised.rds")
+  glimpse()
 
+
+
+# NAs are left in
+# seqn is left in to join on new data if needed
+best_forward_selection %>% 
+  write_rds("best_forward_revised.rds")
+
+
+# List of most important variables
 best_forward_selection %>% 
   names() %>% 
   as_tibble() %>% 
   rename(optimal_var = value) %>% 
-  write_csv("data/optimal_vars_revised.csv")
+  filter(optimal_var != "seqn") %>% 
+  write_csv("optimal_vars_revised.csv")
 
 
 
@@ -330,14 +351,53 @@ best_forward_selection %>%
 
 
 # Potential correlations --------------------------------------------------
-best_predictors <- read_csv("data/optimal_vars_revised.csv")
+best_predictors <- read_csv("optimal_vars_revised.csv")
+best_predictors
+
+overall_complete <- read_rds("best_forward_revised.rds")
+
 opt_predictors <- best_predictors %>%
-  select(optimal_var) %>%
+  select(c(optimal_var)) %>%
   pull()
 
 opt_complete <- overall_complete %>%
-  merge(medication_abridged) %>%
-  merge(medication_counts) %>%
   select(c(opt_predictors, seqn))
 
 
+opt_complete %>% 
+  ggplot(aes(x = ridageyr, y = fsd855)) + 
+  geom_point() +
+  geom_jitter() +
+  geom_smooth()
+
+
+
+
+# Correlations between predictors ----
+plot_corr <- ggcorrplot(opt_complete %>% 
+             left_join(bp_data) %>% 
+             select(-seqn) %>% 
+             na.omit() %>% 
+             cor(),
+           hc.order = TRUE,
+           lab = TRUE,
+           lab_size = 5,
+           type = "lower",
+           method = "circle",
+           title = "Correlogram of Objects",
+           ggtheme = theme_bw,
+           colors = c("skyblue", "white", "#C20B0B")
+) +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
+
+plot_corr
+
+# Lots of stuff is correlated with age.
+
+ggsave(
+  plot_corr,
+  filename = "corrplot.png",
+  dpi = 1200
+)
