@@ -1,0 +1,1 @@
+The Diet data from NHANES are too large to upload onto GitHub. Download them by clicking DR1IFF_I at [NHANES](https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Dietary&CycleBeginYear=2015).
