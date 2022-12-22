@@ -9,7 +9,7 @@ library(haven)
 
 theme_set(theme_minimal())
 
-bp_data <- read_xpt("data/BPX_I.XPT") %>% 
+bp_data <- read_xpt("data/extra/github_setup/data/extra_data/BPX_I.XPT") %>% 
   janitor::clean_names()
 
 
@@ -45,11 +45,11 @@ bp_data %>%
 
 
 # Reading in Optimal Data -------------------------------------------------
-best_vars <- read_csv("data/optimal_vars_revised.csv") %>% 
+best_vars <- read_csv("data/extra/github_setup/optimal_vars_revised.csv") %>% 
   select(optimal_var) %>% 
   pull()
 
-complete <- read_rds("data/best_forward_revised.rds")
+complete <- read_rds("data/extra/github_setup/best_forward_revised.rds")
 
 complete %>% 
   left_join(bp_data %>% select(c(seqn, bpxsy1, bpxdi1))) %>% 
@@ -278,6 +278,7 @@ alq_by_gender <- complete %>%
   ungroup() %>% 
   mutate(
     avg_frac_high = high / (high + regular),
+    avg_frac_reg = regular / (high + regular),
     total = high + regular,
     riagendr = as.factor(case_when(
       riagendr == 1 ~ facet_label_m,
@@ -314,6 +315,7 @@ alq_by_gender <- complete %>%
     legend.position = c(1, 1),
     legend.justification = c(1,1),
     strip.text = element_text(size = 30, family = "serif"),
+    strip.background = element_rect(fill = "grey90"),
     axis.title = element_text(size = 36, family = "serif"),
     legend.text = element_text(family = "serif", size = 28),
     legend.title = element_text(family = "serif", size = 30),
@@ -347,6 +349,117 @@ alq_by_gender
 ggsave(
   alq_by_gender,
   filename = "saved_plots/alcohol_by_gender.png",
+  height = 12,
+  width = 20,
+  dpi = 1200
+)
+
+
+
+
+alq_by_gender <- complete %>% 
+  left_join(alcohol %>% 
+              select(c(seqn, alq130))
+  ) %>% 
+  left_join(bp_data %>% 
+              select(c(seqn, bpxsy1, bpxdi1))
+  ) %>% 
+  filter(
+    !is.na(bpxsy1),
+    !is.na(bpxdi1),
+    !is.na(alq130) & 
+      alq130 < 100
+  ) %>% 
+  mutate(
+    bp_status = case_when(
+      bpxsy1 >= 140 | bpxdi1 >= 90 ~ 1,
+      bpxsy1 < 140 & bpxdi1 < 90 ~ 0 
+    ),
+    alq130 = case_when(
+      floor(alq130/10) == 1 ~ 10,
+      TRUE ~ alq130
+    )
+  ) %>% 
+  group_by(riagendr, alq130) %>% 
+  summarize(
+    regular = n() - sum(bp_status),
+    high = sum(bp_status)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    avg_frac_high = round(high / (high + regular), 2),
+    avg_frac_reg = round(regular / (high + regular),2),
+    total = high + regular,
+    riagendr = as.factor(case_when(
+      riagendr == 1 ~ facet_label_m,
+      riagendr == 2 ~ facet_label_f
+    )
+    )
+  ) %>% 
+  pivot_longer(
+    cols = c(avg_frac_high, avg_frac_reg),
+    values_to = "frac",
+    names_to = "frac_type"
+  ) %>% 
+  mutate(
+    frac_type = factor(case_when(
+      frac_type == "avg_frac_high" ~ "High",
+      frac_type == "avg_frac_reg" ~ "Regular"
+    ),
+    levels = c("Regular", "High"))
+  ) %>%
+  ggplot(aes(x = alq130, y = frac, fill = frac_type)) +
+  geom_col(position = "dodge") +
+  labs(
+    x = "Average Number of Alcoholic Drinks / Day",
+    y = "Percentage of Individuals",
+    fill = "Hypertension\nStatus",
+    caption = "The number of individuals who drink within a certain category per gender are labeled."
+  ) +
+  scale_x_continuous(
+    limits = c(0.5, 10.5),
+    breaks = seq(1, 10),
+    labels = drink_labels
+  ) + 
+  theme(
+    strip.text = element_text(size = 30, family = "serif"),
+    strip.background = element_rect(fill = "grey90"),
+    axis.title = element_text(size = 36, family = "serif"),
+    legend.text = element_text(family = "serif", size = 28),
+    legend.title = element_text(family = "serif", size = 30),
+    plot.caption = element_text(family = "serif", size = 27),
+    axis.text = element_text(family = "serif", size = 40),
+    panel.grid.major.x = element_line(size = 1.5),
+    panel.border = element_rect(color = "black", fill = NA, size = 1)
+  ) +
+  facet_wrap(
+    ~riagendr, 
+    ncol = 1
+  ) +
+  geom_text(
+    aes(label = scales::percent(frac), group = frac_type),
+    position = position_dodge(width = 0.9),
+    vjust = -0.25,
+    color = "black",
+    family = "serif",
+    size = 10
+  ) +
+  scale_fill_manual(
+    values = c("#d9c3eb", "#e07070")
+  ) +
+  scale_y_continuous(
+    limits = c(0, 1.1),
+    breaks = seq(0, 1, 0.25),
+    labels = scales::percent(seq(0, 1, 0.25))
+  )
+
+
+alq_by_gender
+
+
+ggsave(
+  alq_by_gender,
+  filename = "saved_plots/alcohol_by_gender_frac.png",
   height = 12,
   width = 20,
   dpi = 1200
