@@ -19,4 +19,4 @@ Data visualization (plots in ppt).Rmd contains the correlogram in ppt
 
 Data200_FinalProject_Team7_DataVisualization file contains Figure 3, Figure A2, and the correlogram in the project paper.  
 
-Data200_FinalProject_Team7_KNN file contains the KNN model(Accuracy/Sensitivity/Specificity/ROC curve) and cross-validation of optimal k. 
+Data200_FinalProject_Team7_KNN file contains the KNN model(Accuracy/Sensitivity/Specificity/ROC_curve/undersampling_method) and cross-validation of optimal k. 
