@@ -1,0 +1,79 @@
+---
+title: "Data visualization (plots in PPT)"
+author: "Jiayi"
+date: "2022-12-09"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(foreign)
+library("qpcR") 
+library(ggplot2)
+library(ggcorrplot)
+library(GGally)
+```
+
+```{r}
+data2015_2016 = read.csv('data2015_2016_1.csv')
+```
+
+```{r}
+data2015_2016_corr = data2015_2016[,!names(data2015_2016) %in% 
+      c("SEQN")]
+```
+
+```{r}
+data2015_2016_corr <- cor(data2015_2016_corr, use="complete.obs")
+round(data2015_2016_corr,2)
+```
+
+```{r}
+data2015_2016corr <- ggcorrplot(data2015_2016_corr)+
+  labs(title = "Blood Pressure Prediction Ind-Variables Correlation",
+       subtitle = "Year 2015-2016")+
+  theme(text = element_text(size=10, face = "bold"),
+        axis.text.x = element_text(angle=90, hjust=0.9, vjust = 0.3, face = "plain", size = 9),
+        axis.text.y = element_text(angle=0, hjust=0.9,  vjust = 0.3, face = "plain", size = 9))
+
+data2015_2016corr
+```
+
+```{r}
+ggsave(data2015_2016corr,
+       filename = "data2015_2016_corr_replaceNAWith0.png",dpi = 1200,bg = 'white')
+```
+
+```{r}
+data2015_2016pairs <- pairs(Systolic_Blood_Pressure~ + Diabetes + Count_Meds + Total_Caffeine + Body_Mass_Index +  Total_Sodium_Intake, 
+      pch = 19, 
+      cex = .5, 
+      data = data2015_2016, 
+      main="Major Correlated Variables Scatter Matrix~Systolic",
+      row1attop = TRUE,
+      cex.labels = 0.8, 
+      font.labels = 1)
+
+data2015_2016pairs
+```
+
+
+
+```{r}
+data2015_2016pairsDia <- pairs(Diastolic_Blood_Pressure~ + Diabetes + Count_Meds + Total_Caffeine + Body_Mass_Index +  Total_Sodium_Intake, 
+      pch = 19, 
+      cex = .5, 
+      data = data2015_2016, 
+      main="Major Correlated Variables Scatter Matrix~Diastolic",
+      row1attop = TRUE,
+      cex.labels = 0.8, 
+      font.labels = 1)
+
+data2015_2016pairsDia
+```

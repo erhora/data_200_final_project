@@ -1,0 +1,74 @@
+---
+title: 'Data Processing '
+output: html_document
+date: "2022-12-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("foreign")
+#install.packages("hablar")
+```
+
+```{r}
+library(foreign)
+library(hablar)
+library(dplyr)
+```
+
+```{r}
+V0 <- readRDS("complete.rds")
+V0 = V0 %>% rename(SEQN = seqn)
+V0
+```
+
+```{r}
+V0 <- V0[,c("SEQN","ridreth1","total_na")]
+V0 <- na.omit(V0)
+V0
+```
+
+
+```{r}
+V1 <- readRDS("best_forward_revised.rds")
+V1 <- na.omit(V1)
+V1 = V1 %>% rename(SEQN = seqn)
+
+```
+
+```{r}
+V1 %>% 
+  left_join(BPX2015_2016) %>% 
+  group_by(section_H) %>% 
+  filter(
+    !is.na(BPXSY1)
+  ) %>% 
+  filter(BPXSY1 > 0) %>% 
+  summarize(
+    mean_sys = mean(BPXSY1)
+  )
+```
+
+```{r}
+BPX2015_2016<-read.xport("BPX2015_2016.XPT")
+BPX2015_2016 <- BPX2015_2016[c('SEQN','BPXDI1','BPXSY1')]
+BPX2015_2016 <- na.omit(BPX2015_2016)
+BPX2015_2016
+```
+
+```{r}
+data2015_2016 <- qpcR:::cbind.na(V1, BPX2015_2016)
+```
+
+```{r}
+data2015_2016 <- qpcR:::cbind.na(data2015_2016, V0, by = 'SEQN')
+data2015_2016
+```
+
+```{r}
+write.csv(data2015_2016,"C:/Users/elsie/OneDrive/Documents/data2015_2016.csv",row.names=FALSE)
+```
+
