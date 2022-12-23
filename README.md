@@ -6,3 +6,5 @@ Group Members: Elizabeth Hora, Isaac Opiyo, Jiayi Zhang, Ziqi Zhou
 Our work is based on the NHANES data, and we are studying which factors are important in predicting if a person has high blood pressure.
 
 Each group member has a branch with their work inside.
+
+This branch includes the KNN code and the plots in the final project. 
